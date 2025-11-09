@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Mean Speed</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: '#3b82f6',
+              secondary: '#10b981',
+            }
+          }
+        }
+      }
+    </script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <header class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-primary mb-2">Space Mean Speed Calculation</h1>
+            <p class="text-gray-600">Menghitung kecepatan kendaraan, defined with distance and time.</p>
+        </header>
+
+        <main class="max-w-3xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6">
+            <div class="grid md:grid-cols-2 gap-8">
+                <div>
+                    <h2 class="text-2xl font-semibold text-primary mb-4">Input Parameters</h2>
+                    <form id="speedForm" class="space-y-4">
+                        <div>
+                            <label for="distance" class="block text-sm font-medium text-gray-700 mb-1">Distance</label>
+                            <div class="flex gap-2">
+                                <input type="number" id="distance" step="0.01" required 
+                                       class="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary">
+                                <select id="distanceUnit" class="px-2 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary">
+                                    <option value="km">km</option>
+                                    <option value="m">m</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="time" class="block text-sm font-medium text-gray-700 mb-1">Time</label>
+                            <div class="flex gap-2">
+                                <input type="number" id="hours" min="0" step="1" placeholder="hh" 
+                                       class="w-1/4 px-2 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary">
+                                <input type="number" id="minutes" min="0" max="59" step="1" placeholder="mm" 
+                                       class="w-1/4 px-2 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary">
+                                <input type="number" id="seconds" min="0" max="59" step="1" placeholder="ss" 
+                                       class="w-1/4 px-2 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary">
+                            </div>
+                        </div>
+<button type="submit" 
+                                class="w-full bg-primary hover:bg-primary-600 text-white font-medium py-2 px-4 rounded-md transition duration-300 flex items-center justify-center">
+                            <i data-feather="calculate" class="mr-2"></i> Calculate Speed
+                        </button>
+                    </form>
+                </div>
+
+                <div>
+                    <h2 class="text-2xl font-semibold text-primary mb-4">Results</h2>
+                    <div id="resultContainer" class="bg-gray-50 p-4 rounded-lg h-full flex flex-col justify-center items-center">
+                        <div class="text-center">
+                            <i data-feather="bar-chart-2" class="w-12 h-12 text-secondary mb-4"></i>
+                            <p class="text-gray-500">Enter distance and time to calculate the average speed</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8">
+                <h3 class="text-xl font-semibold text-primary mb-3">Recent Calculations</h3>
+                <div id="historyContainer" class="space-y-2">
+                    <!-- History items will be added here -->
+                </div>
+            </div>
+        </main>
+
+        <div class="mt-8 text-center text-gray-500 text-sm">
+            <p>Space Mean Speed (SMS) is the average speed of vehicles in traffic flow over a specified distance.</p>
+            </p>Kecepatan Rata-Rata Ruang (SMS) adalah kecepatan rata-rata kendaraan dalam arus lalu lintas pada jarak tertentu
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>feather.replace();</script>
+<script src=""></script>
+</body>
+</html>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+#resultContainer {
+    min-height: 200px;
+}
+
+.history-item {
+    transition: all 0.3s ease;
+}
+
+.history-item:hover {
+    transform: translateX(4px);
+}
+
+.speed-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #3b82f6;
+}
+
+.result-card {
+    animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</style>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+    const speedForm = document.getElementById('speedForm');
+    const resultContainer = document.getElementById('resultContainer');
+    const historyContainer = document.getElementById('historyContainer');
+    
+    // Load history from localStorage
+    let calculationHistory = JSON.parse(localStorage.getItem('smsHistory')) || [];
+    renderHistory();
+    
+    speedForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        // Get distance and convert to km if needed
+        const distanceInput = parseFloat(document.getElementById('distance').value);
+        const distanceUnit = document.getElementById('distanceUnit').value;
+        let distance = distanceInput;
+        
+        if (distanceUnit === 'm') {
+            distance = distanceInput / 1000;
+        }
+
+        // Get time components and convert to hours
+        const hours = parseInt(document.getElementById('hours').value) || 0;
+        const minutes = parseInt(document.getElementById('minutes').value) || 0;
+        const seconds = parseInt(document.getElementById('seconds').value) || 0;
+        
+        if (hours === 0 && minutes === 0 && seconds === 0) {
+            alert('Please enter a valid time');
+            return;
+        }
+        
+        const totalSeconds = (hours * 3600) + (minutes * 60) + seconds;
+        const time = totalSeconds / 3600; // Convert to hours
+        
+        if (distance <= 0) {
+            alert('Please enter a valid distance greater than zero');
+            return;
+        }
+        
+        const speed = calculateSpeed(distance, time);
+displayResult(distance, time, speed);
+        addToHistory(distance, time, speed);
+    });
+    
+    function calculateSpeed(distance, time) {
+        return distance / time;
+    }
+    function displayResult(distance, time, speed) {
+        const distanceInput = parseFloat(document.getElementById('distance').value);
+        const distanceUnit = document.getElementById('distanceUnit').value;
+        const hours = parseInt(document.getElementById('hours').value) || 0;
+        const minutes = parseInt(document.getElementById('minutes').value) || 0;
+        const seconds = parseInt(document.getElementById('seconds').value) || 0;
+        
+        resultContainer.innerHTML = `
+            <div class="result-card text-center w-full">
+                <div class="flex justify-center mb-4">
+                    <div class="bg-primary-100 p-3 rounded-full">
+                        <i data-feather="navigation" class="w-8 h-8 text-primary"></i>
+                    </div>
+                </div>
+                <p class="text-gray-600 mb-1">Distance: ${distanceInput.toFixed(2)} ${distanceUnit}</p>
+                <p class="text-gray-600 mb-1">Time: ${hours > 0 ? hours + 'h ' : ''}${minutes > 0 ? minutes + 'm ' : ''}${seconds > 0 ? seconds + 's' : ''}</p>
+<div class="my-4">
+                    <p class="text-gray-500 text-sm">Average Speed</p>
+                    <p class="speed-value">${speed.toFixed(2)} km/h</p>
+                </div>
+                <p class="text-sm text-gray-500">Space Mean Speed (SMS)</p>
+            </div>
+        `;
+        feather.replace();
+    }
+    function addToHistory(distance, time, speed) {
+        const distanceInput = parseFloat(document.getElementById('distance').value);
+        const distanceUnit = document.getElementById('distanceUnit').value;
+        const hours = parseInt(document.getElementById('hours').value) || 0;
+        const minutes = parseInt(document.getElementById('minutes').value) || 0;
+        const seconds = parseInt(document.getElementById('seconds').value) || 0;
+        
+        const calculation = {
+            distanceInput,
+            distanceUnit,
+            hours,
+            minutes,
+            seconds,
+            distance,
+            time,
+            speed,
+date: new Date().toLocaleString()
+        };
+        
+        calculationHistory.unshift(calculation);
+        if (calculationHistory.length > 5) {
+            calculationHistory = calculationHistory.slice(0, 5);
+        }
+        
+        localStorage.setItem('smsHistory', JSON.stringify(calculationHistory));
+        renderHistory();
+    }
+    
+    function renderHistory() {
+        if (calculationHistory.length === 0) {
+            historyContainer.innerHTML = '<p class="text-gray-500 text-center py-4">No calculations yet</p>';
+            return;
+        }
+        
+        historyContainer.innerHTML = calculationHistory.map(item => `
+            <div class="history-item bg-gray-50 p-3 rounded-lg flex justify-between items-center">
+                <div>
+                    <p class="font-medium">${item.speed.toFixed(2)} km/h</p>
+                    <p class="text-xs text-gray-500">${item.distanceInput?.toFixed(2) || item.distance.toFixed(2)} ${item.distanceUnit || 'km'} / ${item.hours > 0 ? item.hours + 'h ' : ''}${item.minutes > 0 ? item.minutes + 'm ' : ''}${item.seconds > 0 ? item.seconds + 's' : ''}</p>
+</div>
+                <div class="text-xs text-gray-400">${item.date}</div>
+            </div>
+        `).join('');
+    }
+});
+</script>
