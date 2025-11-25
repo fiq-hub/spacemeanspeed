@@ -1,246 +1,619 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Space Mean Speed</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/feather-icons"></script>
-    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              primary: '#3b82f6',
-              secondary: '#10b981',
-            }
-          }
+    <title>Traffic Analyzer - Space Mean Speed Calculator</title>
+    <style>
+        :root {
+            --primary: #FCBD12; /* Construction Yellow */
+            --primary-hover: #e0a800;
+            --bg-dark: #121212;
+            --card-bg: #1e1e1e;
+            --text-light: #f5f5f5;
+            --text-muted: #a0a0a0;
+            --border-radius: 12px;
+            --glass-border: 1px solid rgba(255, 255, 255, 0.1);
         }
-      }
-    </script>
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-weight: 500;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            line-height: 1.6;
+            overflow-x: hidden; /* Mencegah scroll horizontal akibat animasi */
+        }
+
+        /* --- BACKGROUND ANIMATION & SCENERY --- */
+        .scenery-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: linear-gradient(180deg, #0a0a0a 0%, #1a1a1a 100%);
+            overflow: hidden;
+        }
+
+        /* Jalan Raya Effect */
+        .road-line {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 4px;
+            height: 100%;
+            background: repeating-linear-gradient(
+                to bottom,
+                rgba(252, 189, 18, 0.2) 0px,
+                rgba(252, 189, 18, 0.2) 50px,
+                transparent 50px,
+                transparent 100px
+            );
+            transform: translateX(-50%);
+            animation: moveRoad 2s linear infinite;
+        }
+
+        .road-line.left { left: 20%; opacity: 0.1; }
+        .road-line.right { left: 80%; opacity: 0.1; }
+
+        @keyframes moveRoad {
+            from { background-position: 0 0; }
+            to { background-position: 0 100px; }
+        }
+
+        /* Floating Particles (Traffic Vibes) */
+        .particle {
+            position: absolute;
+            background: var(--primary);
+            border-radius: 50%;
+            opacity: 0.3;
+            animation: floatUp 10s infinite linear;
+        }
+        
+        @keyframes floatUp {
+            0% { transform: translateY(110vh) scale(0.5); opacity: 0; }
+            50% { opacity: 0.5; }
+            100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+        }
+
+        /* --- UI COMPONENTS --- */
+        header {
+            background: rgba(18, 18, 18, 0.9);
+            border-bottom: 2px solid var(--primary);
+            padding: 2rem 1rem;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+            backdrop-filter: blur(10px);
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(252, 189, 18, 0.3);
+        }
+
+        header p {
+            margin: 8px 0 0;
+            color: var(--text-muted);
+            font-size: 1rem;
+            font-weight: 400;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 30px auto;
+            padding: 0 20px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 25px;
+            position: relative;
+            z-index: 5;
+        }
+
+        /* Cards Style (Dark Theme) */
+        .card {
+            background: rgba(30, 30, 30, 0.85); /* Semi-transparent */
+            padding: 25px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            backdrop-filter: blur(8px);
+            border: var(--glass-border);
+            border-left: 5px solid var(--primary);
+            transition: transform 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px 0 rgba(252, 189, 18, 0.1);
+        }
+
+        .card h2 {
+            margin-top: 0;
+            font-size: 1.3rem;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            font-weight: 800;
+            text-transform: uppercase;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        /* Inputs */
+        .form-group { margin-bottom: 20px; }
+        
+        label {
+            display: block;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+        }
+
+        input[type="number"], select {
+            width: 100%;
+            padding: 14px;
+            background-color: #2a2a2a;
+            border: 2px solid #444;
+            border-radius: 6px;
+            color: var(--primary);
+            font-size: 1.1rem;
+            font-weight: 700;
+            box-sizing: border-box;
+            transition: all 0.3s;
+        }
+
+        input[type="number"]::placeholder { color: #555; font-weight: 400; }
+
+        input[type="number"]:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            background-color: #333;
+            box-shadow: 0 0 10px rgba(252, 189, 18, 0.2);
+        }
+
+        .row-input { display: flex; gap: 15px; }
+
+        /* Buttons */
+        .btn {
+            padding: 14px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 800;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: #000; /* Hitam di atas Kuning */
+            width: 100%;
+            box-shadow: 0 4px 15px rgba(252, 189, 18, 0.3);
+        }
+        
+        .btn-primary:hover {
+            background-color: #ffd04d;
+            transform: translateY(-2px);
+        }
+
+        .btn-success { background-color: #28a745; color: white; }
+        .btn-danger { background-color: #dc3545; color: white; }
+        .btn:hover { opacity: 0.9; }
+
+        .controls {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        /* Results & Stats */
+        .result-box {
+            background: linear-gradient(135deg, #2a2a2a 0%, #222 100%);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            text-align: center;
+            margin-top: 15px;
+            border: 1px solid #444;
+        }
+
+        .result-value {
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: var(--primary);
+            text-shadow: 0 0 15px rgba(252, 189, 18, 0.2);
+            font-family: 'Consolas', monospace;
+        }
+
+        .result-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .formula-display {
+            font-family: 'Consolas', monospace;
+            background: #111;
+            color: var(--primary);
+            padding: 8px 15px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-bottom: 10px;
+            border: 1px solid #333;
+        }
+
+        /* Table Styling */
+        .table-container {
+            overflow-x: auto;
+            margin-top: 15px;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+            background-color: #1e1e1e;
+        }
+
+        th {
+            background-color: #333;
+            color: var(--primary);
+            padding: 15px;
+            text-align: left;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #333;
+            color: #ddd;
+        }
+
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background-color: #252525; }
+
+        .delete-btn {
+            color: #ff5252;
+            background: none;
+            border: 1px solid #ff5252;
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.8rem;
+            transition: 0.2s;
+        }
+
+        .delete-btn:hover { background: #ff5252; color: white; }
+
+        /* Responsive */
+        @media (min-width: 768px) {
+            .container { grid-template-columns: 1fr 2fr; }
+            .full-width { grid-column: span 2; }
+        }
+
+        /* Error Msg */
+        #errorMsg {
+            background: rgba(220, 53, 69, 0.1);
+            color: #ff6b6b;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ff6b6b;
+            margin-top: 10px;
+        }
+    </style>
 </head>
-<body class="bg-gray-100 min-h-screen">
-    <div class="container mx-auto px-4 py-8">
-        <header class="text-center mb-12">
-            <h1 class="text-4xl font-bold text-primary mb-2">Space Mean Speed Calculation</h1>
-            <p class="text-gray-600">Menghitung kecepatan kendaraan, defined with distance and time.</p>
-        </header>
+<body>
 
-        <main class="max-w-3xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6">
-            <div class="grid md:grid-cols-2 gap-8">
-                <div>
-                    <h2 class="text-2xl font-semibold text-primary mb-4">Input Parameters</h2>
-                    <form id="speedForm" class="space-y-4">
-                        <div>
-                            <label for="distance" class="block text-sm font-medium text-gray-700 mb-1">Distance</label>
-                            <div class="flex gap-2">
-                                <input type="number" id="distance" step="0.01" required 
-                                       class="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary">
-                                <select id="distanceUnit" class="px-2 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary">
-                                    <option value="km">km</option>
-                                    <option value="m">m</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div>
-                            <label for="time" class="block text-sm font-medium text-gray-700 mb-1">Time</label>
-                            <div class="flex gap-2">
-                                <input type="number" id="hours" min="0" step="1" placeholder="hh" 
-                                       class="w-1/4 px-2 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary">
-                                <input type="number" id="minutes" min="0" max="59" step="1" placeholder="mm" 
-                                       class="w-1/4 px-2 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary">
-                                <input type="number" id="seconds" min="0" max="59" step="1" placeholder="ss" 
-                                       class="w-1/4 px-2 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary">
-                            </div>
-                        </div>
-<button type="submit" 
-                                class="w-full bg-primary hover:bg-primary-600 text-white font-medium py-2 px-4 rounded-md transition duration-300 flex items-center justify-center">
-                            <i data-feather="calculate" class="mr-2"></i> Calculate Speed
-                        </button>
-                    </form>
-                </div>
+<div class="scenery-container">
+    <div class="road-line"></div>
+    <div class="road-line left"></div>
+    <div class="road-line right"></div>
+    
+    <div class="particle" style="left: 10%; width: 4px; height: 4px; animation-duration: 7s;"></div>
+    <div class="particle" style="left: 30%; width: 6px; height: 6px; animation-duration: 12s;"></div>
+    <div class="particle" style="left: 70%; width: 3px; height: 3px; animation-duration: 9s;"></div>
+    <div class="particle" style="left: 90%; width: 5px; height: 5px; animation-duration: 15s;"></div>
+</div>
 
-                <div>
-                    <h2 class="text-2xl font-semibold text-primary mb-4">Results</h2>
-                    <div id="resultContainer" class="bg-gray-50 p-4 rounded-lg h-full flex flex-col justify-center items-center">
-                        <div class="text-center">
-                            <i data-feather="bar-chart-2" class="w-12 h-12 text-secondary mb-4"></i>
-                            <p class="text-gray-500">Enter distance and time to calculate the average speed</p>
-                        </div>
-                    </div>
-                </div>
+<header>
+    <h1>Traffic Analyzer <span style="color:white">Space Mean Speed Calculator</span></h1>
+    <p>Alat Bantu Survei Kecepatan Rata-rata Ruang & Analisis SMS</p>
+    <p>Oleh Kelompok 9T Teknik Sipil</p>
+</header>
+
+<div class="container">
+    <div class="card">
+        <h2>1. Define Parameters</h2>
+        <p style="font-size: 0.9rem; color: #888;">Tentukan panjang lintasan (Trap Length).</p>
+        <div class="form-group">
+            <label>Jarak Tempuh (d)</label>
+            <div class="row-input">
+                <input type="number" id="trapDistance" placeholder="50" value="50" min="1">
+                <select id="unitDistance">
+                    <option value="m">Meter (m)</option>
+                    <option value="km">Kilometer (km)</option>
+                </select>
             </div>
-
-            <div class="mt-8">
-                <h3 class="text-xl font-semibold text-primary mb-3">Recent Calculations</h3>
-                <div id="historyContainer" class="space-y-2">
-                    <!-- History items will be added here -->
-                </div>
-            </div>
-        </main>
-
-        <div class="mt-8 text-center text-gray-500 text-sm">
-            <p>Space Mean Speed (SMS) is the average speed of vehicles in traffic flow over a specified distance.</p>
-            </p>Kecepatan Rata-Rata Ruang (SMS) adalah kecepatan rata-rata kendaraan dalam arus lalu lintas pada jarak tertentu
+        </div>
+        <div class="result-box">
+            <div class="result-label">Metode: Harmonic Mean</div>
+            <div class="formula-display">SMS = (n × d) / Σtᵢ</div>
         </div>
     </div>
 
-    <script src="script.js"></script>
-    <script>feather.replace();</script>
-<script src=""></script>
+    <div class="card">
+        <h2>2. Input Data</h2>
+        <div class="form-group">
+            <label>Waktu Tempuh (Sampel #<span id="sampleCountNext" style="color:var(--primary)">1</span>)</label>
+            <div class="row-input">
+                <input type="number" id="inputMin" placeholder="Min" min="0" value="0">
+                <input type="number" id="inputSec" placeholder="Detik" min="0" step="0.01">
+            </div>
+        </div>
+        <button class="btn btn-primary" onclick="addVehicle()">+ INPUT DATA KENDARAAN</button>
+        <div id="errorMsg" style="display: none;"></div>
+    </div>
+
+    <div class="card full-width">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h2 style="margin:0; border:none;">3. Output & Analysis</h2>
+        </div>
+        
+        <div class="controls">
+            <button class="btn btn-success" onclick="exportToExcel()">⇩ Export .CSV</button>
+            <button class="btn btn-danger" onclick="resetData()">Reset</button>
+        </div>
+
+        <div class="table-container">
+            <table id="dataTable">
+                <thead>
+                    <tr>
+                        <th width="10%">No.</th>
+                        <th>Jarak (m)</th>
+                        <th>Waktu (s)</th>
+                        <th>Kecepatan (km/h)</th>
+                        <th width="15%">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    </tbody>
+            </table>
+        </div>
+
+        <div class="result-box" style="margin-top: 25px; border: 2px solid var(--primary); background: rgba(252, 189, 18, 0.05);">
+            <h3 style="margin-top:0; color: #fff; font-weight: 700; text-transform:uppercase;">Hasil Space Mean Speed (SMS)</h3>
+            <div style="display: flex; justify-content: space-around; flex-wrap: wrap; margin-top:20px;">
+                <div>
+                    <div class="result-label">Total Sampel (n)</div>
+                    <div class="result-value" id="totalN">0</div>
+                </div>
+                <div>
+                    <div class="result-label">Total Waktu (Σt)</div>
+                    <div class="result-value" id="totalTime" style="font-size: 2rem;">0<span style="font-size:1rem; color:#888;">s</span></div>
+                </div>
+                <div>
+                    <div class="result-label">SMS Result</div>
+                    <div class="result-value" id="finalSMS">0 <span style="font-size:1.2rem; font-weight: 700; color: #fff;">km/h</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- STATE MANAGEMENT ---
+    let surveyData = [];
+    const STORAGE_KEY = 'traffic_sms_data_dark';
+
+    // --- INITIALIZATION ---
+    document.addEventListener('DOMContentLoaded', () => {
+        loadFromLocal();
+        updateUI();
+        
+        // Add Enter Key Support for Input
+        document.getElementById("inputSec").addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                addVehicle();
+            }
+        });
+    });
+
+    // --- LOGIC: ADD DATA ---
+    function addVehicle() {
+        const distVal = parseFloat(document.getElementById('trapDistance').value);
+        const unit = document.getElementById('unitDistance').value;
+        const min = parseFloat(document.getElementById('inputMin').value) || 0;
+        const sec = parseFloat(document.getElementById('inputSec').value);
+        const errorMsg = document.getElementById('errorMsg');
+
+        // Validasi Input
+        if (isNaN(distVal) || distVal <= 0) {
+            showError("⚠ Jarak tempuh harus diisi dengan benar.");
+            return;
+        }
+        if (isNaN(sec) || (min === 0 && sec <= 0)) {
+            showError("⚠ Waktu tempuh tidak boleh nol atau kosong.");
+            return;
+        }
+
+        // Konversi Jarak ke Meter
+        const distanceMeters = unit === 'km' ? distVal * 1000 : distVal;
+        // Konversi Waktu ke Detik Total
+        const totalSeconds = (min * 60) + sec;
+        // Hitung Spot Speed (km/jam)
+        const speedKmh = (distanceMeters / totalSeconds) * 3.6;
+
+        // Simpan ke Array
+        const newEntry = {
+            id: Date.now(),
+            distance: distanceMeters,
+            time: totalSeconds,
+            speed: speedKmh
+        };
+
+        surveyData.push(newEntry);
+        saveToLocal();
+        
+        // Reset Input
+        document.getElementById('inputMin').value = 0;
+        document.getElementById('inputSec').value = '';
+        document.getElementById('inputSec').focus();
+        errorMsg.style.display = 'none';
+
+        updateUI();
+    }
+
+    function showError(msg) {
+        const el = document.getElementById('errorMsg');
+        el.innerText = msg;
+        el.style.display = 'block';
+    }
+
+    // --- LOGIC: DELETE & RESET ---
+    function deleteRow(id) {
+        surveyData = surveyData.filter(item => item.id !== id);
+        saveToLocal();
+        updateUI();
+    }
+
+    function resetData() {
+        if(confirm('HAPUS SELURUH DATA? Tindakan ini tidak dapat dibatalkan.')) {
+            surveyData = [];
+            localStorage.removeItem(STORAGE_KEY);
+            updateUI();
+        }
+    }
+
+    // --- LOGIC: CALCULATION ---
+    function calculateSMS() {
+        if (surveyData.length === 0) return 0;
+
+        const n = surveyData.length;
+        let totalDistanceAll = 0;
+        let totalTimeAll = 0;
+
+        surveyData.forEach(data => {
+            totalDistanceAll += data.distance;
+            totalTimeAll += data.time;
+        });
+
+        // SMS (m/s) -> km/h
+        const sms_ms = totalDistanceAll / totalTimeAll;
+        const sms_kmh = sms_ms * 3.6;
+
+        return {
+            n: n,
+            totalTime: totalTimeAll,
+            sms: sms_kmh
+        };
+    }
+
+    // --- UI UPDATES ---
+    function updateUI() {
+        const tbody = document.querySelector('#dataTable tbody');
+        tbody.innerHTML = '';
+
+        if (surveyData.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:#555;">Belum ada data input.</td></tr>`;
+        }
+
+        surveyData.forEach((item, index) => {
+            const row = `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${item.distance.toFixed(1)}</td>
+                    <td>${item.time.toFixed(2)}</td>
+                    <td style="color:var(--primary); font-weight:bold;">${item.speed.toFixed(2)}</td>
+                    <td><button class="delete-btn" onclick="deleteRow(${item.id})">HAPUS</button></td>
+                </tr>
+            `;
+            tbody.innerHTML += row;
+        });
+
+        document.getElementById('sampleCountNext').innerText = surveyData.length + 1;
+
+        const stats = calculateSMS();
+        
+        if (stats === 0) {
+            document.getElementById('totalN').innerText = "0";
+            document.getElementById('totalTime').innerHTML = "0<span style='font-size:1rem; color:#888;'>s</span>";
+            document.getElementById('finalSMS').innerHTML = "0 <span style='font-size:1.2rem; font-weight: 700; color: #fff;'>km/h</span>";
+        } else {
+            document.getElementById('totalN').innerText = stats.n;
+            document.getElementById('totalTime').innerHTML = stats.totalTime.toFixed(2) + "<span style='font-size:1rem; color:#888;'>s</span>";
+            document.getElementById('finalSMS').innerHTML = stats.sms.toFixed(2) + " <span style='font-size:1.2rem; font-weight: 700; color: #fff;'>km/h</span>";
+        }
+    }
+
+    // --- STORAGE ---
+    function saveToLocal() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(surveyData));
+    }
+
+    function loadFromLocal() {
+        const data = localStorage.getItem(STORAGE_KEY);
+        if (data) {
+            surveyData = JSON.parse(data);
+        }
+    }
+
+    // --- EXPORT ---
+    function exportToExcel() {
+        if (surveyData.length === 0) {
+            alert("Tidak ada data untuk diexport.");
+            return;
+        }
+
+        let csvContent = "No,Jarak (m),Waktu (detik),Kecepatan Spot (km/jam)\n";
+
+        surveyData.forEach((item, index) => {
+            csvContent += `${index + 1},${item.distance},${item.time},${item.speed.toFixed(3)}\n`;
+        });
+
+        const stats = calculateSMS();
+        csvContent += `\n,,,HASIL ANALISIS SMS\n`;
+        csvContent += `,,,Total Sampel: ${stats.n}\n`;
+        csvContent += `,,,Total Waktu (detik): ${stats.totalTime.toFixed(2)}\n`;
+        csvContent += `,,,SMS (km/jam): ${stats.sms.toFixed(3)}\n`;
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        
+        const date = new Date();
+        const fileName = `Traffic_SMS_${date.toISOString().slice(0,10)}.csv`;
+        
+        link.setAttribute("href", url);
+        link.setAttribute("download", fileName);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+</script>
+
 </body>
 </html>
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
-body {
-    font-family: 'Inter', sans-serif;
-}
-
-#resultContainer {
-    min-height: 200px;
-}
-
-.history-item {
-    transition: all 0.3s ease;
-}
-
-.history-item:hover {
-    transform: translateX(4px);
-}
-
-.speed-value {
-    font-size: 2.5rem;
-    font-weight: 700;
-    color: #3b82f6;
-}
-
-.result-card {
-    animation: fadeIn 0.5s ease-out;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-</style>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-    const speedForm = document.getElementById('speedForm');
-    const resultContainer = document.getElementById('resultContainer');
-    const historyContainer = document.getElementById('historyContainer');
-    
-    // Load history from localStorage
-    let calculationHistory = JSON.parse(localStorage.getItem('smsHistory')) || [];
-    renderHistory();
-    
-    speedForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        // Get distance and convert to km if needed
-        const distanceInput = parseFloat(document.getElementById('distance').value);
-        const distanceUnit = document.getElementById('distanceUnit').value;
-        let distance = distanceInput;
-        
-        if (distanceUnit === 'm') {
-            distance = distanceInput / 1000;
-        }
-
-        // Get time components and convert to hours
-        const hours = parseInt(document.getElementById('hours').value) || 0;
-        const minutes = parseInt(document.getElementById('minutes').value) || 0;
-        const seconds = parseInt(document.getElementById('seconds').value) || 0;
-        
-        if (hours === 0 && minutes === 0 && seconds === 0) {
-            alert('Please enter a valid time');
-            return;
-        }
-        
-        const totalSeconds = (hours * 3600) + (minutes * 60) + seconds;
-        const time = totalSeconds / 3600; // Convert to hours
-        
-        if (distance <= 0) {
-            alert('Please enter a valid distance greater than zero');
-            return;
-        }
-        
-        const speed = calculateSpeed(distance, time);
-displayResult(distance, time, speed);
-        addToHistory(distance, time, speed);
-    });
-    
-    function calculateSpeed(distance, time) {
-        return distance / time;
-    }
-    function displayResult(distance, time, speed) {
-        const distanceInput = parseFloat(document.getElementById('distance').value);
-        const distanceUnit = document.getElementById('distanceUnit').value;
-        const hours = parseInt(document.getElementById('hours').value) || 0;
-        const minutes = parseInt(document.getElementById('minutes').value) || 0;
-        const seconds = parseInt(document.getElementById('seconds').value) || 0;
-        
-        resultContainer.innerHTML = `
-            <div class="result-card text-center w-full">
-                <div class="flex justify-center mb-4">
-                    <div class="bg-primary-100 p-3 rounded-full">
-                        <i data-feather="navigation" class="w-8 h-8 text-primary"></i>
-                    </div>
-                </div>
-                <p class="text-gray-600 mb-1">Distance: ${distanceInput.toFixed(2)} ${distanceUnit}</p>
-                <p class="text-gray-600 mb-1">Time: ${hours > 0 ? hours + 'h ' : ''}${minutes > 0 ? minutes + 'm ' : ''}${seconds > 0 ? seconds + 's' : ''}</p>
-<div class="my-4">
-                    <p class="text-gray-500 text-sm">Average Speed</p>
-                    <p class="speed-value">${speed.toFixed(2)} km/h</p>
-                </div>
-                <p class="text-sm text-gray-500">Space Mean Speed (SMS)</p>
-            </div>
-        `;
-        feather.replace();
-    }
-    function addToHistory(distance, time, speed) {
-        const distanceInput = parseFloat(document.getElementById('distance').value);
-        const distanceUnit = document.getElementById('distanceUnit').value;
-        const hours = parseInt(document.getElementById('hours').value) || 0;
-        const minutes = parseInt(document.getElementById('minutes').value) || 0;
-        const seconds = parseInt(document.getElementById('seconds').value) || 0;
-        
-        const calculation = {
-            distanceInput,
-            distanceUnit,
-            hours,
-            minutes,
-            seconds,
-            distance,
-            time,
-            speed,
-date: new Date().toLocaleString()
-        };
-        
-        calculationHistory.unshift(calculation);
-        if (calculationHistory.length > 5) {
-            calculationHistory = calculationHistory.slice(0, 5);
-        }
-        
-        localStorage.setItem('smsHistory', JSON.stringify(calculationHistory));
-        renderHistory();
-    }
-    
-    function renderHistory() {
-        if (calculationHistory.length === 0) {
-            historyContainer.innerHTML = '<p class="text-gray-500 text-center py-4">No calculations yet</p>';
-            return;
-        }
-        
-        historyContainer.innerHTML = calculationHistory.map(item => `
-            <div class="history-item bg-gray-50 p-3 rounded-lg flex justify-between items-center">
-                <div>
-                    <p class="font-medium">${item.speed.toFixed(2)} km/h</p>
-                    <p class="text-xs text-gray-500">${item.distanceInput?.toFixed(2) || item.distance.toFixed(2)} ${item.distanceUnit || 'km'} / ${item.hours > 0 ? item.hours + 'h ' : ''}${item.minutes > 0 ? item.minutes + 'm ' : ''}${item.seconds > 0 ? item.seconds + 's' : ''}</p>
-</div>
-                <div class="text-xs text-gray-400">${item.date}</div>
-            </div>
-        `).join('');
-    }
-});
-</script>
